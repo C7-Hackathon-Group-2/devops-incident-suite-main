@@ -1,30 +1,4 @@
-Jun 12 08:01:12 rtr-core-01 %SYS-5-CONFIG_I: Configured from console by admin on vty0 (10.0.1.5)
-Jun 12 08:05:33 rtr-core-01 %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down
-Jun 12 08:05:33 rtr-core-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/1, changed state to down
-Jun 12 08:05:35 rtr-core-01 %OSPF-5-ADJCHG: Process 1, Nbr 10.0.2.1 on GigabitEthernet0/1 from FULL to DOWN, Neighbor Down: Interface down or detached
-Jun 12 08:05:48 rtr-core-01 %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to up
-Jun 12 08:05:50 rtr-core-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/1, changed state to up
-Jun 12 08:05:52 rtr-core-01 %OSPF-5-ADJCHG: Process 1, Nbr 10.0.2.1 on GigabitEthernet0/1 from LOADING to FULL, Loading Done
-Jun 12 08:12:07 rtr-core-01 %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down
-Jun 12 08:12:07 rtr-core-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/1, changed state to down
-Jun 12 08:12:09 rtr-core-01 %OSPF-5-ADJCHG: Process 1, Nbr 10.0.2.1 on GigabitEthernet0/1 from FULL to DOWN, Neighbor Down: Interface down or detached
-Jun 12 08:12:22 rtr-core-01 %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to up
-Jun 12 08:12:24 rtr-core-01 %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/1, changed state to up
-Jun 12 08:15:01 rtr-core-01 %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 10.0.1.100 port 514 started - CLI initiated
-Jun 12 08:22:45 rtr-core-01 %CPU-4-THRESHOLD: CPU utilization has exceeded 90% — current: 94%
-Jun 12 08:23:01 rtr-core-01 %CPU-4-THRESHOLD: CPU utilization has exceeded 90% — current: 97%
-Jun 12 08:23:15 rtr-core-01 %SYS-3-CPUHOG: Task ran for 2120 msec (4/0), process = IP Input, PC = 0x60A1B2C4
-Jun 12 08:24:02 rtr-core-01 %CPU-4-THRESHOLD: CPU utilization has exceeded 90% — current: 92%
-Jun 12 08:25:30 rtr-core-01 %CPU-6-NORMAL: CPU utilization has returned to normal — current: 45%
-Jun 12 08:30:11 rtr-core-01 %DUAL-5-NBRCHANGE: EIGRP-IPv4 100: Neighbor 10.0.3.2 (GigabitEthernet0/2) is up: new adjacency
-Jun 12 08:35:44 rtr-core-01 %SEC-6-IPACCESSLOGP: list EDGE-IN denied tcp 203.0.113.55(44812) -> 10.0.1.10(22), 1 packet
-Jun 12 08:35:45 rtr-core-01 %SEC-6-IPACCESSLOGP: list EDGE-IN denied tcp 203.0.113.55(44813) -> 10.0.1.10(22), 1 packet
-Jun 12 08:35:46 rtr-core-01 %SEC-6-IPACCESSLOGP: list EDGE-IN denied tcp 203.0.113.55(44815) -> 10.0.1.10(22), 1 packet
-Jun 12 08:36:02 rtr-core-01 %SEC-6-IPACCESSLOGP: list EDGE-IN denied tcp 203.0.113.55(44820) -> 10.0.1.10(22), 1 packet
-Jun 12 08:40:00 rtr-core-01 %SYS-5-RESTART: System restarted -- Cisco IOS Software, Version 15.9(3)M7
-Jun 12 08:40:05 rtr-core-01 %OSPF-5-ADJCHG: Process 1, Nbr 10.0.2.1 on GigabitEthernet0/1 from INIT to FULL, Loading Done
-Jun 12 08:40:06 rtr-core-01 %OSPF-5-ADJCHG: Process 1, Nbr 10.0.4.1 on GigabitEthernet0/3 from INIT to FULL, Loading Done
-Jun 12 08:41:12 rtr-core-01 %DUAL-5-NBRCHANGE: EIGRP-IPv4 100: Neighbor 10.0.3.2 (GigabitEthernet0/2) is up: new adjacency
+
 Jun 12 09:00:00 rtr-core-01 %SYS-6-CLOCKUPDATE: System clock has been updated from 09:00:00 UTC to 09:00:00 UTC, configured from NTP
 Jun 12 09:15:22 rtr-core-01 %BGP-3-NOTIFICATION: sent to neighbor 192.168.100.1 4/0 (hold time expired) 0 bytes
 Jun 12 09:15:23 rtr-core-01 %BGP-5-ADJCHANGE: neighbor 192.168.100.1 Down BGP Notification sent
