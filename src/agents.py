@@ -18,13 +18,19 @@ else:
         load_dotenv(dotenv_path=str(parent_env))
 
 _llm_cache = {}
+_llm_cache_key = None
 
 def _get_llm(json_mode=False):
+    global _llm_cache_key
+    current_api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if current_api_key != _llm_cache_key:
+        _llm_cache.clear()
+        _llm_cache_key = current_api_key
     key = "json" if json_mode else "default"
     if key not in _llm_cache:
         kwargs = dict(
             model="openai/gpt-4o",
-            openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+            openai_api_key=current_api_key,
             openai_api_base="https://openrouter.ai/api/v1",
             temperature=0,
         )
