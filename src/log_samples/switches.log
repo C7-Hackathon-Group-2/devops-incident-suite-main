@@ -1,0 +1,27 @@
+2026-06-12T08:04:55Z sw-dist-01 LINK INFO Port Gi1/0/24 link-state changed to DOWN carrier lost
+2026-06-12T08:04:55Z sw-dist-01 STP WARN Port Gi1/0/24 topology-change detected on VLAN 100
+2026-06-12T08:05:10Z sw-dist-01 LINK INFO Port Gi1/0/24 link-state changed to UP speed 1000Mbps full-duplex
+2026-06-12T08:05:12Z sw-dist-01 STP INFO Port Gi1/0/24 transitioned to FORWARDING on VLAN 100
+2026-06-12T08:11:58Z sw-dist-01 LINK INFO Port Gi1/0/24 link-state changed to DOWN carrier lost
+2026-06-12T08:12:15Z sw-dist-01 LINK INFO Port Gi1/0/24 link-state changed to UP speed 1000Mbps full-duplex
+2026-06-12T08:20:33Z sw-dist-01 MAC WARN MAC-flap detected: 00:1A:2B:3C:4D:5E flapping between Gi1/0/12 and Gi1/0/15 on VLAN 200
+2026-06-12T08:20:34Z sw-dist-01 MAC WARN MAC-flap detected: 00:1A:2B:3C:4D:5E flapping between Gi1/0/15 and Gi1/0/12 on VLAN 200
+2026-06-12T08:20:35Z sw-dist-01 MAC WARN MAC-flap detected: 00:1A:2B:3C:4D:5E flapping between Gi1/0/12 and Gi1/0/15 on VLAN 200
+2026-06-12T08:25:01Z sw-dist-01 ERRDISABLE CRIT Port Gi1/0/15 placed in err-disabled state reason: mac-flap
+2026-06-12T08:25:02Z sw-dist-01 LINK INFO Port Gi1/0/15 link-state changed to DOWN err-disabled
+2026-06-12T08:30:00Z sw-dist-01 PORT INFO Port Gi1/0/1 inline-power allocated 15.4W to device phone-lobby-01
+2026-06-12T08:30:05Z sw-dist-01 PORT INFO Port Gi1/0/2 inline-power allocated 30.0W to device ap-floor2-01
+2026-06-12T08:35:11Z sw-dist-01 POWER WARN Total PoE consumption 680W exceeds threshold 650W on module 1
+2026-06-12T08:40:22Z sw-dist-01 ENV CRIT Fan tray 2 failure detected — operating on single fan
+2026-06-12T08:40:23Z sw-dist-01 ENV WARN Internal temperature 52C exceeds warning threshold 50C
+2026-06-12T08:45:00Z sw-dist-01 AUTH INFO 802.1X authentication success for MAC 00:AA:BB:CC:DD:01 on Gi1/0/10 VLAN 100
+2026-06-12T08:45:15Z sw-dist-01 AUTH WARN 802.1X authentication failure for MAC 00:AA:BB:CC:DD:02 on Gi1/0/11 reason: RADIUS timeout
+2026-06-12T08:45:30Z sw-dist-01 AUTH WARN 802.1X authentication failure for MAC 00:AA:BB:CC:DD:03 on Gi1/0/11 reason: RADIUS timeout
+2026-06-12T08:45:45Z sw-dist-01 AUTH WARN 802.1X authentication failure for MAC 00:AA:BB:CC:DD:04 on Gi1/0/13 reason: RADIUS timeout
+2026-06-12T08:46:00Z sw-dist-01 AUTH CRIT RADIUS server 10.0.1.50 marked unreachable — all authentications failing
+2026-06-12T08:50:12Z sw-dist-01 VLAN INFO VLAN 300 created name GUEST_WIFI
+2026-06-12T08:55:00Z sw-dist-01 STP INFO Root bridge election: sw-dist-01 elected root for VLAN 100 priority 4096
+2026-06-12T09:00:33Z sw-dist-01 PORT INFO Port-channel1 member Gi1/0/23 bundled — LACP operational
+2026-06-12T09:00:34Z sw-dist-01 PORT INFO Port-channel1 member Gi1/0/24 bundled — LACP operational
+2026-06-12T09:10:00Z sw-dist-01 STORM WARN Broadcast storm detected on Gi1/0/18 — 1250 pps exceeds threshold 1000 pps
+2026-06-12T09:10:05Z sw-dist-01 STORM CRIT Port Gi1/0/18 shutdown by storm-control — broadcast

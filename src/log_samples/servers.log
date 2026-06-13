@@ -1,0 +1,35 @@
+<165>1 2026-06-12T08:00:01.123Z web-prod-01 nginx 2847 - - 10.0.5.22 "GET /api/v2/users HTTP/1.1" 200 4523 rt=0.045
+<165>1 2026-06-12T08:00:02.456Z web-prod-01 nginx 2847 - - 10.0.5.33 "POST /api/v2/orders HTTP/1.1" 201 892 rt=0.112
+<163>1 2026-06-12T08:05:33.789Z web-prod-01 nginx 2847 - - 10.0.5.44 "GET /api/v2/products HTTP/1.1" 502 182 rt=30.001
+<163>1 2026-06-12T08:05:34.012Z web-prod-01 nginx 2847 - - 10.0.5.44 "GET /api/v2/products HTTP/1.1" 502 182 rt=30.002
+<163>1 2026-06-12T08:05:35.234Z web-prod-01 nginx 2847 - - 10.0.5.22 "GET /api/v2/products HTTP/1.1" 502 182 rt=30.001
+<164>1 2026-06-12T08:05:40.100Z app-prod-01 java 5123 - - java.lang.OutOfMemoryError: Java heap space
+    at com.app.service.ProductService.loadCatalog(ProductService.java:142)
+    at com.app.controller.ProductController.list(ProductController.java:58)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+<162>1 2026-06-12T08:05:41.200Z app-prod-01 systemd 1 - - Unit app-backend.service entered failed state — result: oom-kill
+<166>1 2026-06-12T08:05:45.300Z app-prod-01 systemd 1 - - Unit app-backend.service triggered restart via RestartSec=5s
+<166>1 2026-06-12T08:05:50.400Z app-prod-01 java 5200 - - Application started on port 8080 in 4.8s
+<165>1 2026-06-12T08:10:00.000Z web-prod-01 nginx 2847 - - 10.0.5.22 "GET /api/v2/products HTTP/1.1" 200 15230 rt=0.230
+<161>1 2026-06-12T08:22:15.500Z db-prod-01 postgres 3456 - - PANIC: could not write to file "pg_wal/xlog": No space left on device
+<162>1 2026-06-12T08:22:16.600Z db-prod-01 systemd 1 - - Unit postgresql-14.service entered failed state — result: exit-code
+<163>1 2026-06-12T08:22:17.700Z db-prod-01 disk-monitor - - - ALERT: Filesystem /var/lib/postgresql usage at 100% (95.2GB/95.2GB)
+<163>1 2026-06-12T08:22:18.800Z db-prod-01 disk-monitor - - - ALERT: Filesystem /var/log usage at 92% (18.4GB/20.0GB)
+<166>1 2026-06-12T08:25:00.000Z db-prod-01 cron 9012 - - Job pg_dump_daily completed — backup size 12.3GB written to /backups/daily/
+<164>1 2026-06-12T08:30:00.100Z app-prod-02 java 6100 - - WARN Connection pool exhausted — 50/50 connections in use, 12 threads waiting
+<164>1 2026-06-12T08:30:05.200Z app-prod-02 java 6100 - - WARN Connection pool exhausted — 50/50 connections in use, 25 threads waiting
+<163>1 2026-06-12T08:30:10.300Z app-prod-02 java 6100 - - ERROR Connection acquisition timeout after 30000ms — database unreachable
+<163>1 2026-06-12T08:30:10.400Z web-prod-01 nginx 2847 - - 10.0.5.60 "POST /api/v2/checkout HTTP/1.1" 503 95 rt=30.005
+<163>1 2026-06-12T08:30:11.500Z web-prod-01 nginx 2847 - - 10.0.5.33 "GET /api/v2/cart HTTP/1.1" 503 95 rt=30.003
+<166>1 2026-06-12T08:35:00.000Z mon-prod-01 prometheus 7890 - - Alert firing: HighErrorRate — 5xx rate 34.2% on web-prod-01 over last 5m
+<166>1 2026-06-12T08:35:01.000Z mon-prod-01 alertmanager 7891 - - Notification sent to #ops-critical: HighErrorRate web-prod-01
+<166>1 2026-06-12T08:40:00.000Z db-prod-01 postgres 3500 - - LOG: database system was shut down at 2026-06-12 08:22:16 UTC
+<166>1 2026-06-12T08:40:02.000Z db-prod-01 postgres 3500 - - LOG: database system is ready to accept connections
+<165>1 2026-06-12T08:40:10.000Z app-prod-02 java 6100 - - INFO Connection pool recovered — 12/50 connections in use
+<165>1 2026-06-12T08:45:00.000Z web-prod-01 nginx 2847 - - 10.0.5.22 "GET /api/v2/products HTTP/1.1" 200 15230 rt=0.089
+<164>1 2026-06-12T09:00:00.000Z app-prod-01 java 5200 - - WARN SSL certificate for api.payment-provider.com expires in 7 days
+<163>1 2026-06-12T09:05:22.000Z web-prod-01 sshd 10234 - - Failed password for root from 203.0.113.55 port 44812 ssh2
+<163>1 2026-06-12T09:05:23.000Z web-prod-01 sshd 10235 - - Failed password for root from 203.0.113.55 port 44813 ssh2
+<163>1 2026-06-12T09:05:24.000Z web-prod-01 sshd 10236 - - Failed password for root from 203.0.113.55 port 44815 ssh2
+<163>1 2026-06-12T09:05:25.000Z web-prod-01 sshd 10237 - - Failed password for root from 203.0.113.55 port 44820 ssh2
+<166>1 2026-06-12T09:05:26.000Z web-prod-01 fail2ban 10300 - - Ban 203.0.113.55 — 4 failed attempts in 5 seconds

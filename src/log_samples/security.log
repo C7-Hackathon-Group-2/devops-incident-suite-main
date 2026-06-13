@@ -1,0 +1,26 @@
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|url-filtering|3|rt=Jun 12 2026 08:02:15 UTC src=10.0.5.22 dst=93.184.216.34 spt=49201 dpt=443 act=allow cat=business-and-economy cs1=HTTPS-DECRYPT
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|end|1|rt=Jun 12 2026 08:03:00 UTC src=10.0.5.22 dst=93.184.216.34 spt=49201 dpt=443 proto=TCP act=allow in=15234 out=42301
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|spyware|8|rt=Jun 12 2026 08:10:22 UTC src=10.0.5.44 dst=198.51.100.77 spt=52310 dpt=443 act=alert cat=command-and-control cs1=Trojan.Gen.DNS cs2=critical
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|spyware|8|rt=Jun 12 2026 08:10:45 UTC src=10.0.5.44 dst=198.51.100.77 spt=52311 dpt=80 act=block cat=command-and-control cs1=Trojan.Gen.HTTP cs2=critical
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|spyware|8|rt=Jun 12 2026 08:11:02 UTC src=10.0.5.44 dst=203.0.113.99 spt=52400 dpt=8443 act=block cat=command-and-control cs1=Beacon.C2.TLS cs2=critical
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|deny|5|rt=Jun 12 2026 08:15:30 UTC src=203.0.113.55 dst=10.0.1.10 spt=44812 dpt=22 proto=TCP act=deny rule=BLOCK-EXTERNAL-SSH in=0 out=0
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|deny|5|rt=Jun 12 2026 08:15:31 UTC src=203.0.113.55 dst=10.0.1.10 spt=44813 dpt=22 proto=TCP act=deny rule=BLOCK-EXTERNAL-SSH in=0 out=0
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|deny|5|rt=Jun 12 2026 08:15:32 UTC src=203.0.113.55 dst=10.0.1.10 spt=44814 dpt=22 proto=TCP act=deny rule=BLOCK-EXTERNAL-SSH in=0 out=0
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|deny|5|rt=Jun 12 2026 08:15:33 UTC src=203.0.113.55 dst=10.0.1.10 spt=44815 dpt=22 proto=TCP act=deny rule=BLOCK-EXTERNAL-SSH in=0 out=0
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|deny|5|rt=Jun 12 2026 08:15:34 UTC src=203.0.113.55 dst=10.0.1.10 spt=44820 dpt=22 proto=TCP act=deny rule=BLOCK-EXTERNAL-SSH in=0 out=0
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|vulnerability|7|rt=Jun 12 2026 08:20:10 UTC src=203.0.113.88 dst=10.0.1.20 spt=61234 dpt=443 act=block cat=sql-injection cs1=SQL-Injection-Attempt cs2=high
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|vulnerability|7|rt=Jun 12 2026 08:20:15 UTC src=203.0.113.88 dst=10.0.1.20 spt=61235 dpt=443 act=block cat=sql-injection cs1=SQL-Injection-Attempt cs2=high
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|4|rt=Jun 12 2026 08:25:00 UTC src=10.0.1.5 act=success user=admin msg=Successful admin login from 10.0.1.5
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|6|rt=Jun 12 2026 08:30:11 UTC src=10.0.9.15 act=failure user=admin msg=Failed login attempt — invalid password
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|6|rt=Jun 12 2026 08:30:22 UTC src=10.0.9.15 act=failure user=admin msg=Failed login attempt — invalid password
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|6|rt=Jun 12 2026 08:30:35 UTC src=10.0.9.15 act=failure user=admin msg=Failed login attempt — invalid password
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|7|rt=Jun 12 2026 08:30:36 UTC src=10.0.9.15 act=lockout user=admin msg=Account locked after 3 failed attempts
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|url-filtering|5|rt=Jun 12 2026 08:35:00 UTC src=10.0.5.60 dst=104.244.42.1 spt=55001 dpt=443 act=block cat=malware cs1=Known-Malicious-Domain
+CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|end|1|rt=Jun 12 2026 08:40:00 UTC src=10.0.5.10 dst=8.8.8.8 spt=50100 dpt=53 proto=UDP act=allow in=64 out=128
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|config|3|rt=Jun 12 2026 08:45:00 UTC src=10.0.1.5 act=commit user=admin msg=Configuration committed successfully
+CEF:0|PaloAlto|PA-5220|10.2|GLOBALPROTECT|auth|4|rt=Jun 12 2026 08:50:10 UTC src=198.51.100.22 act=success user=jsmith msg=VPN tunnel established — assigned IP 10.0.200.15
+CEF:0|PaloAlto|PA-5220|10.2|GLOBALPROTECT|auth|6|rt=Jun 12 2026 08:55:33 UTC src=198.51.100.44 act=failure user=unknown msg=VPN authentication failed — certificate expired
+CEF:0|PaloAlto|PA-5220|10.2|GLOBALPROTECT|auth|6|rt=Jun 12 2026 08:55:50 UTC src=198.51.100.44 act=failure user=unknown msg=VPN authentication failed — certificate expired
+CEF:0|PaloAlto|PA-5220|10.2|THREAT|file-blocking|6|rt=Jun 12 2026 09:00:22 UTC src=10.0.5.33 dst=172.67.182.100 spt=55200 dpt=443 act=block cat=exe-download cs1=Blocked-EXE-Download
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|ha|2|rt=Jun 12 2026 09:05:00 UTC act=failover msg=HA failover triggered — active unit unresponsive for 15 seconds
+CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|ha|3|rt=Jun 12 2026 09:05:02 UTC act=active msg=This unit transitioned to ACTIVE state
