@@ -1,85 +1,103 @@
-"""Tests for watcher.py — LogFileHandler and DirectoryWatcher."""
+"""Tests for watcher.py — LogFileHandler and DirectoryWatcher.
 
-import os
-import time
-import tempfile
+Uses ``tmp_path`` fixtures for filesystem isolation and follows the
+AAA (Arrange-Act-Assert) pattern throughout.
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
-from watcher import LogFileHandler, DirectoryWatcher
+from watcher import DirectoryWatcher, LogFileHandler
 
-
-# ---------------------------------------------------------------------------
-# LogFileHandler
-# ---------------------------------------------------------------------------
 
 class TestLogFileHandler:
-    def test_should_process_log_file(self):
-        handler = LogFileHandler(callback=lambda p, e: None)
-        assert handler._should_process("/tmp/test.log") is True
+    """Verify file filtering, extension checks, and debounce logic."""
 
-    def test_should_process_txt_file(self):
-        handler = LogFileHandler(callback=lambda p, e: None)
-        assert handler._should_process("/tmp/test.txt") is True
+    @pytest.mark.parametrize(
+        "filename,expected",
+        [
+            ("/tmp/test.log", True),
+            ("/tmp/test.txt", True),
+            ("/tmp/test.py", False),
+            ("/tmp/test.json", False),
+            ("/tmp/test.csv", False),
+        ],
+    )
+    def test_should_process_filters_by_extension(
+        self, filename: str, expected: bool
+    ) -> None:
+        """Only ``.log`` and ``.txt`` files should be accepted."""
+        handler: LogFileHandler = LogFileHandler(callback=lambda p, e: None)
+        assert handler._should_process(filename) is expected
 
-    def test_should_not_process_non_log_file(self):
-        handler = LogFileHandler(callback=lambda p, e: None)
-        assert handler._should_process("/tmp/test.py") is False
-        assert handler._should_process("/tmp/test.json") is False
-        assert handler._should_process("/tmp/test.csv") is False
+    def test_debounce_prevents_rapid_reprocessing(self) -> None:
+        """A second call for the same path within the debounce window should be rejected."""
+        # Arrange
+        handler: LogFileHandler = LogFileHandler(callback=lambda p, e: None)
 
-    def test_debounce_prevents_rapid_reprocessing(self):
-        handler = LogFileHandler(callback=lambda p, e: None)
+        # Act / Assert
         assert handler._should_process("/tmp/test.log") is True
         assert handler._should_process("/tmp/test.log") is False
 
-    def test_debounce_allows_different_files(self):
-        handler = LogFileHandler(callback=lambda p, e: None)
+    def test_debounce_allows_different_files(self) -> None:
+        """Distinct file paths should each be processed independently."""
+        handler: LogFileHandler = LogFileHandler(callback=lambda p, e: None)
         assert handler._should_process("/tmp/a.log") is True
         assert handler._should_process("/tmp/b.log") is True
 
-    def test_on_created_calls_callback_for_log_file(self):
-        cb = MagicMock()
-        handler = LogFileHandler(callback=cb)
-        handler._debounce_seconds = 0
+    def test_on_created_invokes_callback_for_log_file(self) -> None:
+        """A file-creation event for a ``.log`` file should trigger the callback."""
+        # Arrange
+        cb: MagicMock = MagicMock()
+        handler: LogFileHandler = LogFileHandler(callback=cb)
+        handler.DEBOUNCE_SECONDS = 0
 
-        event = MagicMock()
+        event: MagicMock = MagicMock()
         event.is_directory = False
         event.src_path = "/tmp/test.log"
 
+        # Act
         handler.on_created(event)
+
+        # Assert
         cb.assert_called_once_with("/tmp/test.log", "created")
 
-    def test_on_created_skips_directory(self):
-        cb = MagicMock()
-        handler = LogFileHandler(callback=cb)
+    def test_on_created_ignores_directories(self) -> None:
+        """Directory-creation events should not trigger the callback."""
+        cb: MagicMock = MagicMock()
+        handler: LogFileHandler = LogFileHandler(callback=cb)
 
-        event = MagicMock()
+        event: MagicMock = MagicMock()
         event.is_directory = True
         event.src_path = "/tmp/logs"
 
         handler.on_created(event)
         cb.assert_not_called()
 
-    def test_on_modified_calls_callback_for_log_file(self):
-        cb = MagicMock()
-        handler = LogFileHandler(callback=cb)
-        handler._debounce_seconds = 0
+    def test_on_modified_invokes_callback_for_txt_file(self) -> None:
+        """A file-modification event for a ``.txt`` file should trigger the callback."""
+        cb: MagicMock = MagicMock()
+        handler: LogFileHandler = LogFileHandler(callback=cb)
+        handler.DEBOUNCE_SECONDS = 0
 
-        event = MagicMock()
+        event: MagicMock = MagicMock()
         event.is_directory = False
         event.src_path = "/tmp/test.txt"
 
         handler.on_modified(event)
         cb.assert_called_once_with("/tmp/test.txt", "modified")
 
-    def test_on_modified_skips_non_log(self):
-        cb = MagicMock()
-        handler = LogFileHandler(callback=cb)
+    def test_on_modified_ignores_non_log_extensions(self) -> None:
+        """Modification events for unsupported extensions should be ignored."""
+        cb: MagicMock = MagicMock()
+        handler: LogFileHandler = LogFileHandler(callback=cb)
 
-        event = MagicMock()
+        event: MagicMock = MagicMock()
         event.is_directory = False
         event.src_path = "/tmp/test.py"
 
@@ -87,73 +105,109 @@ class TestLogFileHandler:
         cb.assert_not_called()
 
 
-# ---------------------------------------------------------------------------
-# DirectoryWatcher
-# ---------------------------------------------------------------------------
-
 class TestDirectoryWatcher:
-    def test_scan_existing_reads_log_files(self, tmp_path):
+    """Verify scan, start/stop lifecycle, and filesystem interactions."""
+
+    def test_scan_existing_reads_only_log_files(self, tmp_path: Path) -> None:
+        """Only ``.log`` and ``.txt`` files should be returned by scan."""
+        # Arrange
         (tmp_path / "router.log").write_text("line1\nline2")
         (tmp_path / "switch.txt").write_text("entry1")
         (tmp_path / "notes.md").write_text("ignore me")
 
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
-        result = watcher.scan_existing()
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
 
+        # Act
+        result: dict[str, str] = watcher.scan_existing()
+
+        # Assert
         assert "router.log" in result
         assert "switch.txt" in result
         assert "notes.md" not in result
         assert result["router.log"] == "line1\nline2"
 
-    def test_scan_existing_empty_dir(self, tmp_path):
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
-        result = watcher.scan_existing()
-        assert result == {}
+    def test_scan_existing_returns_empty_for_empty_directory(
+        self, tmp_path: Path
+    ) -> None:
+        """An empty directory should yield an empty dict."""
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
+        assert watcher.scan_existing() == {}
 
-    def test_scan_existing_nonexistent_dir(self, tmp_path):
-        watcher = DirectoryWatcher(str(tmp_path / "nope"), callback=lambda p, e: None)
-        result = watcher.scan_existing()
-        assert result == {}
+    def test_scan_existing_returns_empty_for_missing_directory(
+        self, tmp_path: Path
+    ) -> None:
+        """A nonexistent directory should yield an empty dict without error."""
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path / "nope"), callback=lambda p, e: None
+        )
+        assert watcher.scan_existing() == {}
 
-    def test_is_running_false_initially(self, tmp_path):
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
+    def test_is_running_returns_false_before_start(self, tmp_path: Path) -> None:
+        """A newly created watcher should not be running."""
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
         assert watcher.is_running is False
 
-    def test_start_and_stop(self, tmp_path):
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
+    def test_start_and_stop_lifecycle(self, tmp_path: Path) -> None:
+        """Starting and stopping should toggle ``is_running`` correctly."""
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
         watcher.start()
         assert watcher.is_running is True
         watcher.stop()
         assert watcher.is_running is False
 
-    def test_start_is_idempotent(self, tmp_path):
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
+    def test_start_is_idempotent(self, tmp_path: Path) -> None:
+        """Calling ``start()`` twice should not create a second observer."""
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
         watcher.start()
-        observer1 = watcher._observer
+        observer_ref = watcher._observer
         watcher.start()
-        assert watcher._observer is observer1
+        assert watcher._observer is observer_ref
         watcher.stop()
 
-    def test_stop_when_not_started_is_safe(self, tmp_path):
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
-        watcher.stop()  # should not raise
+    def test_stop_before_start_is_safe(self, tmp_path: Path) -> None:
+        """Calling ``stop()`` before ``start()`` should not raise."""
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
+        watcher.stop()
 
-    def test_start_creates_directory_if_missing(self, tmp_path):
-        watch_dir = tmp_path / "new_watch_dir"
+    def test_start_creates_missing_directory(self, tmp_path: Path) -> None:
+        """``start()`` should create the watch directory if it does not exist."""
+        watch_dir: Path = tmp_path / "new_watch_dir"
         assert not watch_dir.exists()
-        watcher = DirectoryWatcher(str(watch_dir), callback=lambda p, e: None)
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(watch_dir), callback=lambda p, e: None
+        )
         watcher.start()
         assert watch_dir.exists()
         watcher.stop()
 
-    def test_scan_existing_skips_unreadable_files(self, tmp_path):
-        log_file = tmp_path / "protected.log"
+    def test_scan_existing_skips_unreadable_files(self, tmp_path: Path) -> None:
+        """Files with denied read permissions should be silently skipped."""
+        # Arrange
+        log_file: Path = tmp_path / "protected.log"
         log_file.write_text("secret data")
         log_file.chmod(0o000)
 
-        watcher = DirectoryWatcher(str(tmp_path), callback=lambda p, e: None)
-        result = watcher.scan_existing()
+        watcher: DirectoryWatcher = DirectoryWatcher(
+            str(tmp_path), callback=lambda p, e: None
+        )
 
+        # Act
+        result: dict[str, str] = watcher.scan_existing()
+
+        # Assert
         assert "protected.log" not in result
 
+        # Cleanup
         log_file.chmod(0o644)

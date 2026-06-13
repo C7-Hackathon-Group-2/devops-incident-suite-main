@@ -1,6 +1,8 @@
+from __future__ import annotations
+
+import json
 import os
 import sys
-import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -8,8 +10,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 import streamlit as st
 from dotenv import load_dotenv
 
-# Load .env locally only — secrets are NOT exposed in the UI.
-# Secrets (from .env or st.secrets) are reserved for the /api endpoint only.
 _project_root = Path(__file__).parent.parent
 env_path = _project_root / ".env"
 if env_path.exists():
@@ -27,12 +27,12 @@ def _get_secret(key: str) -> str:
     except Exception:
         return os.getenv(key, "")
 
-st.set_page_config(page_title="DevOps Incident Analyzer", page_icon="🔍", layout="wide")
 
-# ---------------------------------------------------------------------------
-# Session state defaults
-# ---------------------------------------------------------------------------
-DEFAULTS = {
+st.set_page_config(
+    page_title="DevOps Incident Analyzer", page_icon="🔍", layout="wide"
+)
+
+DEFAULTS: dict = {
     "analysis_result": None,
     "running": False,
     "watcher_active": False,
@@ -43,9 +43,6 @@ for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
 with st.sidebar:
     st.title("⚙️ Configuration")
 
@@ -71,6 +68,7 @@ with st.sidebar:
     with col_w1:
         if st.button("📡 Scan Directory", use_container_width=True):
             from watcher import DirectoryWatcher
+
             watcher = DirectoryWatcher(watch_dir, callback=lambda p, e: None)
             found = watcher.scan_existing()
             if found:
@@ -105,33 +103,48 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 📢 Slack Channel Routing")
     st.caption("Incidents auto-route by category:")
-    st.markdown("""
+    st.markdown(
+        """
     - `#ops-incidents` — resource, application, database
     - `#secops-incidents` — security, auth, policy
     - `#network-incidents` — interface, routing, hardware
-    """)
+    """
+    )
 
     slack_webhook = st.text_input(
         "Slack Webhook URL",
         value="",
         type="password",
         disabled=slack_mock,
-        placeholder="https://hooks.slack.com/services/...",
+        placeholder="https://hooks.slack.com/services/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",
     )
     if slack_webhook:
         os.environ["SLACK_WEBHOOK_URL"] = slack_webhook
 
     st.markdown("---")
     st.markdown("### 🎫 JIRA")
-    jira_url = st.text_input("JIRA URL", value="", disabled=jira_mock, placeholder="https://yourcompany.atlassian.net")
+    jira_url = st.text_input(
+        "JIRA URL",
+        value="",
+        disabled=jira_mock,
+        placeholder="https://yourcompany.atlassian.net",
+    )
     if jira_url:
         os.environ["JIRA_URL"] = jira_url
 
-    jira_email = st.text_input("JIRA Email", value="", disabled=jira_mock, placeholder="you@company.com")
+    jira_email = st.text_input(
+        "JIRA Email", value="", disabled=jira_mock, placeholder="you@company.com"
+    )
     if jira_email:
         os.environ["JIRA_EMAIL"] = jira_email
 
-    jira_token = st.text_input("JIRA API Token", value="", type="password", disabled=jira_mock, placeholder="Paste JIRA API token")
+    jira_token = st.text_input(
+        "JIRA API Token",
+        value="",
+        type="password",
+        disabled=jira_mock,
+        placeholder="Paste JIRA API token",
+    )
     if jira_token:
         os.environ["JIRA_API_TOKEN"] = jira_token
 
@@ -140,11 +153,11 @@ with st.sidebar:
         os.environ["JIRA_PROJECT_KEY"] = jira_project
 
 
-# ---------------------------------------------------------------------------
-# Main area
-# ---------------------------------------------------------------------------
 st.title("🔍 DevOps Incident Analysis Suite")
-st.markdown("Upload infrastructure logs or watch a directory for AI-driven incident analysis, remediation, and notification.")
+st.markdown(
+    "Upload infrastructure logs or watch a directory for AI-driven "
+    "incident analysis, remediation, and notification."
+)
 
 col1, col2, col3 = st.columns([3, 1, 1])
 
@@ -162,12 +175,14 @@ with col2:
 
 with col3:
     st.markdown("#### Watched")
-    use_watched = st.button("📡 Use Watched", use_container_width=True,
-                            disabled=not st.session_state.watched_files)
+    use_watched = st.button(
+        "📡 Use Watched",
+        use_container_width=True,
+        disabled=not st.session_state.watched_files,
+    )
 
-# Gather log content — persist in session state so it survives reruns
 if use_samples:
-    sample_dir = Path(__file__).parent / "log_samples"  # log_samples is inside src/
+    sample_dir = Path(__file__).parent / "log_samples"
     loaded = {}
     for f in sample_dir.glob("*.log"):
         loaded[f.name] = f.read_text()
@@ -190,16 +205,18 @@ if raw_logs:
     with st.expander("Preview log content", expanded=False):
         for name, content in raw_logs.items():
             st.markdown(f"**{name}** ({len(content.splitlines())} lines)")
-            st.code(content[:2000] + ("..." if len(content) > 2000 else ""), language="text")
+            st.code(
+                content[:2000] + ("..." if len(content) > 2000 else ""),
+                language="text",
+            )
 
-# ---------------------------------------------------------------------------
-# Analysis
-# ---------------------------------------------------------------------------
 has_api_key = bool(os.getenv("OPENROUTER_API_KEY"))
 if raw_logs and not has_api_key:
     st.warning("Enter your OpenRouter API key in the sidebar to run analysis.")
 
-if raw_logs and has_api_key and st.button("🚀 Analyze Incidents", type="primary", use_container_width=True):
+if raw_logs and has_api_key and st.button(
+    "🚀 Analyze Incidents", type="primary", use_container_width=True
+):
     from graph import build_incident_graph
 
     initial_state = {
@@ -231,21 +248,22 @@ if raw_logs and has_api_key and st.button("🚀 Analyze Incidents", type="primar
             n_notifications = len(result.get("notifications_sent", []))
             n_tickets = len(result.get("jira_tickets", []))
             status.update(
-                label=f"Complete — {n_events} events, {n_issues} issues, {n_notifications} notifications, {n_tickets} tickets",
+                label=(
+                    f"Complete — {n_events} events, {n_issues} issues, "
+                    f"{n_notifications} notifications, {n_tickets} tickets"
+                ),
                 state="complete",
             )
-        except Exception as e:
-            status.update(label=f"Error: {e}", state="error")
-            st.error(f"Analysis failed: {type(e).__name__}: {e}")
+        except Exception as exc:
+            status.update(label=f"Error: {exc}", state="error")
+            st.error(f"Analysis failed: {type(exc).__name__}: {exc}")
             import traceback
+
             st.code(traceback.format_exc(), language="text")
 
     if st.session_state.analysis_result:
         st.rerun()
 
-# ---------------------------------------------------------------------------
-# Results display
-# ---------------------------------------------------------------------------
 result = st.session_state.analysis_result
 
 if result:
@@ -276,13 +294,27 @@ if result:
     with tab_events:
         if events:
             import pandas as pd
+
             df = pd.json_normalize(events)
-            display_cols = [c for c in ["severity", "category", "summary", "source_file"] if c in df.columns]
+            display_cols = [
+                c
+                for c in ["severity", "category", "summary", "source_file"]
+                if c in df.columns
+            ]
             if display_cols:
+
                 def color_severity(val):
-                    colors = {"critical": "background-color: #fee2e2", "warning": "background-color: #fef3c7", "info": "background-color: #dbeafe"}
+                    colors = {
+                        "critical": "background-color: #fee2e2",
+                        "warning": "background-color: #fef3c7",
+                        "info": "background-color: #dbeafe",
+                    }
                     return colors.get(val, "")
-                styled = df[display_cols].style.map(color_severity, subset=["severity"] if "severity" in display_cols else [])
+
+                styled = df[display_cols].style.map(
+                    color_severity,
+                    subset=["severity"] if "severity" in display_cols else [],
+                )
                 st.dataframe(styled, use_container_width=True, height=400)
             else:
                 st.dataframe(df, use_container_width=True, height=400)
@@ -295,9 +327,13 @@ if result:
                 sev = r.get("severity", "unknown")
                 cat = r.get("category", "unknown")
                 from tools import route_to_channel
+
                 channel = route_to_channel(cat)
                 icon = "🔴" if sev == "critical" else "🟡"
-                with st.expander(f"{icon} {r.get('title', 'Issue')}  |  {channel}", expanded=(sev == "critical")):
+                with st.expander(
+                    f"{icon} {r.get('title', 'Issue')}  |  {channel}",
+                    expanded=(sev == "critical"),
+                ):
                     col_a, col_b, col_c = st.columns(3)
                     col_a.markdown(f"**Severity:** {sev.upper()}")
                     col_b.markdown(f"**Category:** {cat}")
@@ -320,7 +356,11 @@ if result:
                     commands = r.get("cli_commands", [])
                     if commands:
                         st.markdown("**CLI Commands:**")
-                        cmd_text = "\n".join(commands) if isinstance(commands, list) else str(commands)
+                        cmd_text = (
+                            "\n".join(commands)
+                            if isinstance(commands, list)
+                            else str(commands)
+                        )
                         st.code(cmd_text, language="bash")
 
                     st.markdown(f"**Verification:** {r.get('verification', 'N/A')}")
@@ -344,7 +384,6 @@ if result:
     with tab_slack:
         notifications = result.get("notifications_sent", [])
         if notifications:
-            # Group by channel for display
             for n in notifications:
                 channel = n.get("channel", "unknown")
                 is_mock = n.get("mock", True)
@@ -383,6 +422,7 @@ if result:
                     if fields:
                         st.markdown("**Fields:**")
                         import pandas as pd
+
                         st.dataframe(pd.DataFrame(fields), use_container_width=True)
         else:
             st.info("No schemas inferred.")
