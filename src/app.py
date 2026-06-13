@@ -116,7 +116,7 @@ with st.sidebar:
         value="",
         type="password",
         disabled=slack_mock,
-        placeholder="https://hooks.slack.com/services/...",
+        placeholder="https://hooks.slack.com/services/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",
     )
     if slack_webhook:
         os.environ["SLACK_WEBHOOK_URL"] = slack_webhook

@@ -14,13 +14,3 @@ CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|4|rt=Jun 12 2026 08:25:00 UTC src=10.0.1
 CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|6|rt=Jun 12 2026 08:30:11 UTC src=10.0.9.15 act=failure user=admin msg=Failed login attempt — invalid password
 CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|6|rt=Jun 12 2026 08:30:22 UTC src=10.0.9.15 act=failure user=admin msg=Failed login attempt — invalid password
 CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|6|rt=Jun 12 2026 08:30:35 UTC src=10.0.9.15 act=failure user=admin msg=Failed login attempt — invalid password
-CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|auth|7|rt=Jun 12 2026 08:30:36 UTC src=10.0.9.15 act=lockout user=admin msg=Account locked after 3 failed attempts
-CEF:0|PaloAlto|PA-5220|10.2|THREAT|url-filtering|5|rt=Jun 12 2026 08:35:00 UTC src=10.0.5.60 dst=104.244.42.1 spt=55001 dpt=443 act=block cat=malware cs1=Known-Malicious-Domain
-CEF:0|PaloAlto|PA-5220|10.2|TRAFFIC|end|1|rt=Jun 12 2026 08:40:00 UTC src=10.0.5.10 dst=8.8.8.8 spt=50100 dpt=53 proto=UDP act=allow in=64 out=128
-CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|config|3|rt=Jun 12 2026 08:45:00 UTC src=10.0.1.5 act=commit user=admin msg=Configuration committed successfully
-CEF:0|PaloAlto|PA-5220|10.2|GLOBALPROTECT|auth|4|rt=Jun 12 2026 08:50:10 UTC src=198.51.100.22 act=success user=jsmith msg=VPN tunnel established — assigned IP 10.0.200.15
-CEF:0|PaloAlto|PA-5220|10.2|GLOBALPROTECT|auth|6|rt=Jun 12 2026 08:55:33 UTC src=198.51.100.44 act=failure user=unknown msg=VPN authentication failed — certificate expired
-CEF:0|PaloAlto|PA-5220|10.2|GLOBALPROTECT|auth|6|rt=Jun 12 2026 08:55:50 UTC src=198.51.100.44 act=failure user=unknown msg=VPN authentication failed — certificate expired
-CEF:0|PaloAlto|PA-5220|10.2|THREAT|file-blocking|6|rt=Jun 12 2026 09:00:22 UTC src=10.0.5.33 dst=172.67.182.100 spt=55200 dpt=443 act=block cat=exe-download cs1=Blocked-EXE-Download
-CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|ha|2|rt=Jun 12 2026 09:05:00 UTC act=failover msg=HA failover triggered — active unit unresponsive for 15 seconds
-CEF:0|PaloAlto|PA-5220|10.2|SYSTEM|ha|3|rt=Jun 12 2026 09:05:02 UTC act=active msg=This unit transitioned to ACTIVE state
