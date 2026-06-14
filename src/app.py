@@ -10,6 +10,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 import streamlit as st
 from dotenv import load_dotenv
 
+os.environ["SLACK_WEBHOOK_URL"] = "https://hooks.slack.com/services/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" 
+os.environ["JIRA_URL"] = "https://vinnyailearner.atlassian.net/"
+os.environ["JIRA_API_TOKEN"] = "ATATT3xFfGF0T96dYGDdjw1CBRgykGtvUlUN4Byd7cQj65dJAVgzDkAI4Eo7W4DyzaMviXa0ERrverXOM-tAg6Qz16Ratk-hYDYWICiK7sUEz_iRHO7Mcwc-nFj8AHhcB7RSzKk7HX9VWB36hl4sEU8GDEaQP47wfK6U-i4HFR6arBcdiReWpAc=E78E6E6E"
+os.environ["JIRA_EMAIL"] = "vinnyailearner@gmail.com"
+os.environ["JIRA_PROJECT_KEY"] = "KAN"
+
 _project_root = Path(__file__).parent.parent
 env_path = _project_root / ".env"
 if env_path.exists():
@@ -84,10 +90,10 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🔗 Integrations")
 
-    slack_mock = st.toggle("Slack Mock Mode", value=True)
+    slack_mock = st.toggle("Slack Mock Mode", value=False)
     os.environ["SLACK_MOCK"] = str(slack_mock).lower()
 
-    jira_mock = st.toggle("JIRA Mock Mode", value=True)
+    jira_mock = st.toggle("JIRA Mock Mode", value=False)
     os.environ["JIRA_MOCK"] = str(jira_mock).lower()
 
     if slack_mock:
@@ -127,13 +133,13 @@ with st.sidebar:
         "JIRA URL",
         value="",
         disabled=jira_mock,
-        placeholder="https://yourcompany.atlassian.net",
+        placeholder="https://vinnyailearner.atlassian.net/",
     )
     if jira_url:
         os.environ["JIRA_URL"] = jira_url
 
     jira_email = st.text_input(
-        "JIRA Email", value="", disabled=jira_mock, placeholder="you@company.com"
+        "JIRA Email", value="", disabled=jira_mock, placeholder="vinnyailearner@gmail.com"
     )
     if jira_email:
         os.environ["JIRA_EMAIL"] = jira_email
@@ -143,12 +149,12 @@ with st.sidebar:
         value="",
         type="password",
         disabled=jira_mock,
-        placeholder="Paste JIRA API token",
+        placeholder="ATATT3xFfGF0T96dYGDdjw1CBRgykGtvUlUN4Byd7cQj65dJAVgzDkAI4Eo7W4DyzaMviXa0ERrverXOM-tAg6Qz16Ratk-hYDYWICiK7sUEz_iRHO7Mcwc-nFj8AHhcB7RSzKk7HX9VWB36hl4sEU8GDEaQP47wfK6U-i4HFR6arBcdiReWpAc=E78E6E6E",
     )
     if jira_token:
         os.environ["JIRA_API_TOKEN"] = jira_token
 
-    jira_project = st.text_input("JIRA Project Key", value="OPS", disabled=jira_mock)
+    jira_project = st.text_input("JIRA Project Key", value="KAN", disabled=jira_mock)
     if jira_project:
         os.environ["JIRA_PROJECT_KEY"] = jira_project
 

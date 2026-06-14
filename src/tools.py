@@ -135,6 +135,11 @@ def create_jira_ticket(summary: str, description: str, priority: str) -> str:
     jira_email: str | None = os.getenv("JIRA_EMAIL")
     jira_project: str = os.getenv("JIRA_PROJECT_KEY", "OPS")
 
+    print(f"jira_url: {jira_url}")
+    print(f"JIRA_API_TOKEN: {jira_token}")
+    print(f"jira_email: {jira_email}")
+    print(f"jira_project: {jira_project}")
+
     if not all([jira_url, jira_token, jira_email]):
         logger.error("JIRA credentials not configured")
         return json.dumps({"error": "JIRA credentials not configured"})
@@ -151,7 +156,7 @@ def create_jira_ticket(summary: str, description: str, priority: str) -> str:
             "project": {"key": jira_project},
             "summary": summary,
             "description": description,
-            "issuetype": {"name": "Bug"},
+            "issuetype": {"name": "Incident"},
             "priority": {"name": priority_map.get(priority, "Medium")},
         },
     }
