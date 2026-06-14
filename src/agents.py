@@ -354,7 +354,7 @@ def cookbook_node(state: IncidentState) -> dict[str, Any]:
             "You are a technical writer for DevOps teams. Given remediation data, "
             "create a single, comprehensive incident runbook in Markdown format.\n\n"
             "Structure:\n"
-            "# Incident Runbook — [Date]\n"
+            "# Incident Runbook\n"
             "## Executive Summary (2-3 sentences)\n"
             "## Priority Matrix (table: issue, severity, affected systems)\n"
             "## Remediation Checklists (one numbered section per issue with:\n"

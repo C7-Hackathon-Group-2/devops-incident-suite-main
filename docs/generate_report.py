@@ -7,7 +7,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle,
-    HRFlowable, KeepTogether, Image,
+    HRFlowable, KeepTogether, Image, Preformatted,
 )
 from pathlib import Path
 
@@ -40,25 +40,29 @@ styles.add(ParagraphStyle(
     leftIndent=20, bulletIndent=10, spaceAfter=4,
 ))
 styles.add(ParagraphStyle(
-    "CodeCustom", parent=styles["Code"], fontSize=9, leading=12,
+    "PreCode", parent=styles["Code"], fontSize=8.5, leading=11,
     leftIndent=20, backColor=HexColor("#f5f5f5"), spaceAfter=8,
-    borderWidth=0.5, borderColor=HexColor("#dddddd"), borderPadding=6,
+    borderWidth=0.5, borderColor=HexColor("#dddddd"), borderPadding=8,
+    fontName="Courier",
 ))
 styles.add(ParagraphStyle(
     "Caption", parent=styles["Normal"], fontSize=9, leading=12,
     textColor=HexColor("#888888"), alignment=TA_CENTER, spaceAfter=12,
 ))
 
+
 def hr():
     return HRFlowable(width="100%", thickness=0.5, color=HexColor("#cccccc"),
                       spaceBefore=6, spaceAfter=12)
 
+
 def bullet(text):
     return Paragraph(f"•  {text}", styles["BulletCustom"])
 
-def code(text):
-    escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    return Paragraph(escaped, styles["CodeCustom"])
+
+def code_block(text):
+    return Preformatted(text, styles["PreCode"])
+
 
 def make_table(headers, rows, col_widths=None):
     data = [headers] + rows
@@ -90,7 +94,7 @@ def build():
     )
     story = []
 
-    # ── Cover ──────────────────────────────────────────────────────────
+    # -- Cover --
     story.append(Spacer(1, 2*inch))
     story.append(Paragraph("Multi-Agent DevOps<br/>Incident Analysis Suite", styles["CoverTitle"]))
     story.append(Spacer(1, 12))
@@ -100,12 +104,12 @@ def build():
     story.append(Spacer(1, 24))
     story.append(hr())
     story.append(Paragraph("Wayne Johnston", styles["CoverSub"]))
-    story.append(Paragraph("June 12, 2026", styles["CoverSub"]))
+    story.append(Paragraph("June 13, 2026", styles["CoverSub"]))
     story.append(Spacer(1, 12))
     story.append(Paragraph("Built with Claude Opus 4.6  |  LangGraph  |  LangChain  |  Streamlit", styles["CoverSub"]))
     story.append(PageBreak())
 
-    # ── Table of Contents ──────────────────────────────────────────────
+    # -- Table of Contents --
     story.append(Paragraph("Table of Contents", styles["SectionHead"]))
     story.append(hr())
     toc_items = [
@@ -129,7 +133,7 @@ def build():
         story.append(Paragraph(item, styles["Body"]))
     story.append(PageBreak())
 
-    # ── 1. Executive Summary ───────────────────────────────────────────
+    # -- 1. Executive Summary --
     story.append(Paragraph("1. Executive Summary", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph(
@@ -161,7 +165,7 @@ def build():
         story.append(bullet(cap))
     story.append(PageBreak())
 
-    # ── 2. Design & Architecture ───────────────────────────────────────
+    # -- 2. Design & Architecture --
     story.append(Paragraph("2. Design &amp; Architecture", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph(
@@ -171,13 +175,12 @@ def build():
         styles["Body"],
     ))
     story.append(Paragraph("Architecture Flow:", styles["SubHead"]))
-    story.append(code(
+    story.append(code_block(
         "START --> Log Reader/Classifier --> Remediation --> route_by_severity\n"
         "  has_critical --> Slack Notifier --> JIRA Ticket Agent --> Cookbook --> END\n"
         "  no_critical  --> Cookbook --> END"
     ))
 
-    # Embed architecture diagram
     diagram_path = Path(__file__).parent / "architecture_diagram.png"
     if diagram_path.exists():
         img_width = 6.0 * inch
@@ -210,7 +213,7 @@ def build():
         story.append(bullet(d))
     story.append(PageBreak())
 
-    # ── 3. Technology Stack ────────────────────────────────────────────
+    # -- 3. Technology Stack --
     story.append(Paragraph("3. Technology Stack", styles["SectionHead"]))
     story.append(hr())
     story.append(make_table(
@@ -230,7 +233,7 @@ def build():
     ))
     story.append(Spacer(1, 12))
     story.append(Paragraph("LLM Configuration:", styles["SubHead"]))
-    story.append(code(
+    story.append(code_block(
         'ChatOpenAI(\n'
         '    model="openai/gpt-4o",\n'
         '    openai_api_key=os.getenv("OPENROUTER_API_KEY"),\n'
@@ -240,11 +243,10 @@ def build():
     ))
     story.append(PageBreak())
 
-    # ── 4. Agent Design ────────────────────────────────────────────────
+    # -- 4. Agent Design --
     story.append(Paragraph("4. Agent Design", styles["SectionHead"]))
     story.append(hr())
 
-    # Log Reader
     story.append(Paragraph("4.1 Log Reader / Classifier Agent", styles["SubHead"]))
     story.append(Paragraph(
         "The core differentiator of the system. Uses a two-stage LLM approach with no "
@@ -271,7 +273,6 @@ def build():
         styles["Body"],
     ))
 
-    # Remediation
     story.append(Paragraph("4.2 Remediation Agent", styles["SubHead"]))
     story.append(Paragraph(
         "Filters events to warning and critical severity, groups by issue type, and produces "
@@ -288,7 +289,6 @@ def build():
     ]:
         story.append(bullet(f))
 
-    # Cookbook
     story.append(Paragraph("4.3 Cookbook Synthesizer Agent", styles["SubHead"]))
     story.append(Paragraph(
         "Takes all remediations and synthesizes a single, comprehensive Markdown runbook with: "
@@ -297,7 +297,6 @@ def build():
         styles["Body"],
     ))
 
-    # Notification
     story.append(Paragraph("4.4 Slack Notification Agent", styles["SubHead"]))
     story.append(Paragraph(
         "Groups remediations by category and routes each group to the appropriate Slack channel. "
@@ -305,7 +304,6 @@ def build():
         styles["Body"],
     ))
 
-    # JIRA
     story.append(Paragraph("4.5 JIRA Ticket Agent", styles["SubHead"]))
     story.append(Paragraph(
         "Creates JIRA tickets for each critical-severity issue. Ticket descriptions include "
@@ -315,7 +313,7 @@ def build():
     ))
     story.append(PageBreak())
 
-    # ── 5. LangGraph Orchestration ─────────────────────────────────────
+    # -- 5. LangGraph Orchestration --
     story.append(Paragraph("5. LangGraph Orchestration", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph(
@@ -324,7 +322,7 @@ def build():
         "after the Remediation node checks if any critical-severity issues were found:",
         styles["Body"],
     ))
-    story.append(code(
+    story.append(code_block(
         'graph = StateGraph(IncidentState)\n'
         'graph.add_node("log_reader", log_reader_node)\n'
         'graph.add_node("remediation", remediation_node)\n'
@@ -349,7 +347,7 @@ def build():
     ))
     story.append(PageBreak())
 
-    # ── 6. Slack Channel Routing ───────────────────────────────────────
+    # -- 6. Slack Channel Routing --
     story.append(Paragraph("6. Slack Channel Routing", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph(
@@ -374,31 +372,43 @@ def build():
         styles["Body"],
     ))
 
-    # ── 7. Project Structure ───────────────────────────────────────────
+    # -- 7. Project Structure --
     story.append(Paragraph("7. Project Structure &amp; Implementation", styles["SectionHead"]))
     story.append(hr())
-    story.append(code(
-        "devops-incident-suite/\n"
-        "  src/                # Application source code\n"
-        "    app.py            # Streamlit UI entry point\n"
-        "    state.py          # IncidentState TypedDict\n"
-        "    agents.py         # All agent node functions\n"
-        "    graph.py          # LangGraph StateGraph wiring\n"
-        "    tools.py          # @tool wrappers (Slack, JIRA)\n"
-        "    watcher.py        # Directory watcher (watchdog)\n"
-        "    log_samples/      # Synthetic test logs\n"
-        "      routers.log     # Cisco IOS syslog format\n"
-        "      switches.log    # Tabular switch logs\n"
-        "      security.log    # CEF firewall logs\n"
-        "      servers.log     # RFC5424 syslog format\n"
-        "  tests/              # Unit tests (pytest)\n"
-        "    test_state.py     # State schema tests\n"
-        "    test_tools.py     # Channel routing, Slack, JIRA\n"
-        "    test_watcher.py   # Directory watcher tests\n"
-        "    test_agents.py    # Agent node + LLM mock tests\n"
-        "    test_graph.py     # Graph + pipeline tests\n"
-        "  requirements.txt\n"
-        "  .streamlit/config.toml"
+    story.append(code_block(
+        "devops-incident-suite-main/\n"
+        "|-- src/                    # Application source code\n"
+        "|   |-- __init__.py\n"
+        "|   |-- app.py              # Streamlit UI entry point\n"
+        "|   |-- state.py            # IncidentState TypedDict (shared state)\n"
+        "|   |-- agents.py           # 5 agent node functions + lazy LLM\n"
+        "|   |-- graph.py            # LangGraph StateGraph wiring\n"
+        "|   |-- tools.py            # @tool wrappers (Slack, JIRA) + channel routing\n"
+        "|   |-- watcher.py          # Directory watcher (watchdog)\n"
+        "|   +-- log_samples/        # Synthetic test logs\n"
+        "|       |-- routers.log     # Cisco IOS syslog format\n"
+        "|       |-- switches.log    # Structured tabular format\n"
+        "|       |-- security.log    # CEF (Common Event Format)\n"
+        "|       +-- servers.log     # RFC5424 syslog format\n"
+        "|-- tests/                  # Unit tests (pytest)\n"
+        "|   |-- __init__.py\n"
+        "|   |-- conftest.py         # pytest path + shared fixtures\n"
+        "|   |-- test_state.py       # State schema tests\n"
+        "|   |-- test_tools.py       # Channel routing, Slack, JIRA tests\n"
+        "|   |-- test_watcher.py     # Directory watcher tests\n"
+        "|   |-- test_agents.py      # Agent node + LLM mock tests\n"
+        "|   +-- test_graph.py       # Graph compilation + pipeline tests\n"
+        "|-- docs/                   # Documentation & generated reports\n"
+        "|   |-- generate_report.py  # PDF report generator (reportlab)\n"
+        "|   |-- generate_slides.py  # Slide deck generator (python-pptx)\n"
+        "|   |-- architecture_diagram.png\n"
+        "|   |-- DevOps_Incident_Suite_Project_Report.pdf\n"
+        "|   +-- DevOps_Incident_Suite_Presentation.pptx\n"
+        "|-- requirements.txt        # Python dependencies\n"
+        "|-- pyproject.toml          # pytest/coverage configuration\n"
+        "|-- .env.example            # Environment variable template\n"
+        "+-- .streamlit/\n"
+        "    +-- config.toml         # Streamlit theme configuration"
     ))
     story.append(Paragraph(
         "The project uses a src/tests layout. The core pipeline "
@@ -408,7 +418,7 @@ def build():
     ))
     story.append(PageBreak())
 
-    # ── 8. Shared State Schema ─────────────────────────────────────────
+    # -- 8. Shared State Schema --
     story.append(Paragraph("8. Shared State Schema", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph(
@@ -432,9 +442,9 @@ def build():
         ],
         col_widths=[1.6*inch, 1.5*inch, 3.4*inch],
     ))
-    story.append(PageBreak())
 
-    # ── 9. Synthetic Log Samples ───────────────────────────────────────
+    # -- 9. Synthetic Log Samples --
+    story.append(Spacer(1, 16))
     story.append(Paragraph("9. Synthetic Log Samples", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph(
@@ -453,8 +463,9 @@ def build():
         ],
         col_widths=[1.4*inch, 2*inch, 3.2*inch],
     ))
+    story.append(PageBreak())
 
-    # ── 10. Streamlit UI ───────────────────────────────────────────────
+    # -- 10. Streamlit UI --
     story.append(Paragraph("10. Streamlit UI", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph("Sidebar Configuration:", styles["SubHead"]))
@@ -488,9 +499,8 @@ def build():
         "<b>Inferred Schemas</b>: AI-detected field definitions per log file",
     ]:
         story.append(bullet(item))
-    story.append(PageBreak())
 
-    # ── 11. Security ───────────────────────────────────────────────────
+    # -- 11. Security --
     story.append(Paragraph("11. Security Considerations", styles["SectionHead"]))
     story.append(hr())
     for item in [
@@ -506,8 +516,9 @@ def build():
         "and IDE artifacts.",
     ]:
         story.append(bullet(item))
+    story.append(PageBreak())
 
-    # ── 12. Deployment ─────────────────────────────────────────────────
+    # -- 12. Deployment --
     story.append(Paragraph("12. Deployment", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph("GitHub Repository:", styles["SubHead"]))
@@ -519,7 +530,7 @@ def build():
     for i, step in enumerate([
         "Sign in to share.streamlit.io with GitHub account",
         "Click 'New app' and select the devops-incident-suite repository",
-        "Set branch to 'main' and main file to 'app.py'",
+        "Set branch to 'main' and main file to 'src/app.py'",
         "No secrets required in Advanced Settings (users enter their own keys)",
         "Click Deploy - app will be live within 2 minutes",
     ], 1):
@@ -528,14 +539,12 @@ def build():
     story.append(Paragraph("Future Deployment Options:", styles["SubHead"]))
     story.append(Paragraph(
         "The framework-agnostic core enables deployment on Flask, FastAPI, or any Python "
-        "web framework. The user expressed interest in Flask for production deployment. "
-        "Since agents.py, graph.py, tools.py, and state.py have zero Streamlit imports, "
-        "a Flask api.py can import and invoke the same pipeline via HTTP endpoints.",
+        "web framework. Since agents.py, graph.py, tools.py, and state.py have zero Streamlit "
+        "imports, a Flask api.py can import and invoke the same pipeline via HTTP endpoints.",
         styles["Body"],
     ))
-    story.append(PageBreak())
 
-    # ── 13. Verification ───────────────────────────────────────────────
+    # -- 13. Verification --
     story.append(Paragraph("13. Verification &amp; Testing", styles["SectionHead"]))
     story.append(hr())
     story.append(Paragraph("Verification Steps Performed:", styles["SubHead"]))
@@ -552,16 +561,40 @@ def build():
     ]:
         story.append(bullet(item))
 
-    story.append(Paragraph("Test Commands:", styles["SubHead"]))
-    story.append(code(
-        '# Verify imports\n'
-        'python -c "from state import IncidentState"\n'
-        'python -c "from graph import build_incident_graph; g = build_incident_graph()"\n\n'
-        '# Run the app\n'
-        'streamlit run app.py'
+    story.append(Paragraph("Test Suite (84 tests, 99% coverage):", styles["SubHead"]))
+    story.append(make_table(
+        ["Module", "Tests", "Coverage"],
+        [
+            ["test_state.py", "2", "TypedDict instantiation"],
+            ["test_tools.py", "23", "Channel routing, Slack mock/live, JIRA mock/live"],
+            ["test_watcher.py", "14", "File filtering, debounce, directory scan, error handling"],
+            ["test_agents.py", "32", "Lazy LLM, all 5 agent nodes, JSON parse edge cases"],
+            ["test_graph.py", "8", "Severity routing, graph compilation, full pipeline paths"],
+        ],
+        col_widths=[1.6*inch, 0.8*inch, 4.1*inch],
     ))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("Test Commands:", styles["SubHead"]))
+    story.append(code_block(
+        '# Verify imports\n'
+        'PYTHONPATH=src python -c "from state import IncidentState"\n'
+        'PYTHONPATH=src python -c "from graph import build_incident_graph; \\\n'
+        '    g = build_incident_graph()"\n'
+        '\n'
+        '# Run all tests\n'
+        'python -m pytest tests/ -v --tb=short\n'
+        '\n'
+        '# Run with coverage\n'
+        'python -m pytest tests/ -v --tb=short \\\n'
+        '    --cov=state --cov=tools --cov=watcher \\\n'
+        '    --cov=agents --cov=graph --cov-report=term-missing\n'
+        '\n'
+        '# Run the app\n'
+        'streamlit run src/app.py'
+    ))
+    story.append(PageBreak())
 
-    # ── 14. Risks & Mitigations ────────────────────────────────────────
+    # -- 14. Risks & Mitigations --
     story.append(Paragraph("14. Risks &amp; Mitigations", styles["SectionHead"]))
     story.append(hr())
     story.append(make_table(
@@ -580,9 +613,9 @@ def build():
         ],
         col_widths=[2.5*inch, 4*inch],
     ))
-    story.append(PageBreak())
 
-    # ── 15. Future Enhancements ────────────────────────────────────────
+    # -- 15. Future Enhancements --
+    story.append(Spacer(1, 16))
     story.append(Paragraph("15. Future Enhancements", styles["SectionHead"]))
     story.append(hr())
     for item in [
