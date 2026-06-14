@@ -10,9 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import streamlit as st
 from dotenv import load_dotenv
 
-os.environ["SLACK_WEBHOOK_URL"] = "https://hooks.slack.com/services/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" 
 os.environ["JIRA_URL"] = "https://vinnyailearner.atlassian.net/"
-os.environ["JIRA_API_TOKEN"] = "ATATT3xFfGF0T96dYGDdjw1CBRgykGtvUlUN4Byd7cQj65dJAVgzDkAI4Eo7W4DyzaMviXa0ERrverXOM-tAg6Qz16Ratk-hYDYWICiK7sUEz_iRHO7Mcwc-nFj8AHhcB7RSzKk7HX9VWB36hl4sEU8GDEaQP47wfK6U-i4HFR6arBcdiReWpAc=E78E6E6E"
 os.environ["JIRA_EMAIL"] = "vinnyailearner@gmail.com"
 os.environ["JIRA_PROJECT_KEY"] = "KAN"
 
