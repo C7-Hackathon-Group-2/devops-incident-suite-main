@@ -206,7 +206,7 @@ class TestSafeJsonParse:
 
 
 class TestLogReaderNode:
-    """Verify the three-stage AI log parsing pipeline."""
+    """Verify the combined AI log analysis pipeline."""
 
     @patch("agents.LLM_JSON")
     def test_basic_log_parsing_produces_classified_events(
@@ -214,26 +214,22 @@ class TestLogReaderNode:
     ) -> None:
         """A single log file should yield inferred schema and classified events."""
         # Arrange
-        mock_llm.invoke.side_effect = [
-            _make_llm_response(json.dumps({
+        mock_llm.invoke.return_value = _make_llm_response(json.dumps({
+            "schema": {
                 "format_name": "syslog",
                 "description": "Standard syslog",
                 "fields": [{
                     "position": 0, "name": "timestamp", "type": "datetime",
                     "description": "ts", "example": "Jan 1",
                 }],
-            })),
-            _make_llm_response(json.dumps({
-                "events": [{"timestamp": "Jan 1", "message": "link up"}],
-            })),
-            _make_llm_response(json.dumps({
-                "classified": [{
-                    "timestamp": "Jan 1", "message": "link up",
-                    "severity": "info", "category": "interface",
-                    "summary": "Link came up",
-                }],
-            })),
-        ]
+            },
+            "events": [{"timestamp": "Jan 1", "message": "link up"}],
+            "classified": [{
+                "timestamp": "Jan 1", "message": "link up",
+                "severity": "info", "category": "interface",
+                "summary": "Link came up",
+            }],
+        }))
         state: dict[str, Any] = {
             "raw_logs": {"test.log": "Jan 1 host link up"},
             "errors": [],
@@ -249,6 +245,7 @@ class TestLogReaderNode:
         assert len(result["classified_events"]) == 1
         assert result["classified_events"][0]["severity"] == "info"
         assert result["status"] == "classified"
+        mock_llm.invoke.assert_called_once()
 
     @patch("agents.LLM_JSON")
     def test_empty_log_file_is_skipped(self, mock_llm: MagicMock) -> None:
@@ -262,8 +259,8 @@ class TestLogReaderNode:
         mock_llm.invoke.assert_not_called()
 
     @patch("agents.LLM_JSON")
-    def test_schema_parse_failure_records_error(self, mock_llm: MagicMock) -> None:
-        """Invalid JSON from schema inference should add an error and skip the file."""
+    def test_log_analysis_failure_records_error(self, mock_llm: MagicMock) -> None:
+        """Invalid JSON from log analysis should add an error and skip the file."""
         from agents import log_reader_node
 
         mock_llm.invoke.return_value = _make_llm_response("not valid json")
@@ -271,42 +268,37 @@ class TestLogReaderNode:
         state: dict[str, Any] = {"raw_logs": {"bad.log": "some log line"}, "errors": []}
         result: dict[str, Any] = log_reader_node(state)
 
-        assert any("Schema inference failed" in e for e in result["errors"])
+        assert any("Log analysis failed" in e for e in result["errors"])
         assert result["classified_events"] == []
 
     @patch("agents.LLM_JSON")
-    def test_event_parse_failure_records_error(self, mock_llm: MagicMock) -> None:
-        """Invalid JSON from event parsing should add an error for that chunk."""
+    def test_unexpected_json_shape_records_error(self, mock_llm: MagicMock) -> None:
+        """A non-object JSON response should add an analysis error."""
         from agents import log_reader_node
 
-        mock_llm.invoke.side_effect = [
-            _make_llm_response(json.dumps({"format_name": "test", "fields": []})),
-            _make_llm_response("invalid events json"),
-            _make_llm_response(json.dumps({"classified": []})),
-        ]
+        mock_llm.invoke.return_value = _make_llm_response(json.dumps([]))
 
         state: dict[str, Any] = {"raw_logs": {"test.log": "line1"}, "errors": []}
         result: dict[str, Any] = log_reader_node(state)
 
-        assert any("Parse failed" in e for e in result["errors"])
+        assert any("unexpected JSON" in e for e in result["errors"])
 
     @patch("agents.LLM_JSON")
-    def test_classification_failure_falls_back_to_info_severity(
+    def test_missing_classification_defaults_to_info_severity(
         self, mock_llm: MagicMock
     ) -> None:
-        """Classification failure should fall back to ``severity=info``."""
+        """Missing classification data should fall back to ``severity=info``."""
         from agents import log_reader_node
 
-        mock_llm.invoke.side_effect = [
-            _make_llm_response(json.dumps({"format_name": "test", "fields": []})),
-            _make_llm_response(json.dumps({"events": [{"msg": "test"}]})),
-            _make_llm_response("bad classification json"),
-        ]
+        mock_llm.invoke.return_value = _make_llm_response(json.dumps({
+            "schema": {"format_name": "test", "fields": []},
+            "events": [{"msg": "test"}],
+        }))
 
         state: dict[str, Any] = {"raw_logs": {"test.log": "line1"}, "errors": []}
         result: dict[str, Any] = log_reader_node(state)
 
-        assert any("Classification failed" in e for e in result["errors"])
+        assert result["errors"] == []
         assert len(result["classified_events"]) == 1
         assert result["classified_events"][0]["severity"] == "info"
         assert result["classified_events"][0]["category"] == "unknown"
@@ -320,9 +312,9 @@ class TestLogReaderNode:
 
         def _responses_for(fname: str) -> list[MagicMock]:
             return [
-                _make_llm_response(json.dumps({"format_name": fname, "fields": []})),
-                _make_llm_response(json.dumps({"events": [{"msg": f"event from {fname}"}]})),
                 _make_llm_response(json.dumps({
+                    "schema": {"format_name": fname, "fields": []},
+                    "events": [{"msg": f"event from {fname}"}],
                     "classified": [{
                         "msg": f"event from {fname}", "severity": "info",
                         "category": "application", "summary": "test",
@@ -340,6 +332,30 @@ class TestLogReaderNode:
 
         assert len(result["inferred_schemas"]) == 2
         assert len(result["classified_events"]) == 2
+        assert mock_llm.invoke.call_count == 2
+
+    @patch("agents.LLM_JSON")
+    def test_repeated_file_content_uses_cached_analysis(
+        self, mock_llm: MagicMock
+    ) -> None:
+        """Repeated analysis of identical content should avoid another LLM call."""
+        from agents import log_reader_node
+
+        mock_llm.invoke.return_value = _make_llm_response(json.dumps({
+            "schema": {"format_name": "test", "fields": []},
+            "events": [{"msg": "cached"}],
+            "classified": [{
+                "msg": "cached", "severity": "info",
+                "category": "application", "summary": "Cached event",
+            }],
+        }))
+        state: dict[str, Any] = {"raw_logs": {"test.log": "line a"}, "errors": []}
+
+        first = log_reader_node(state)
+        second = log_reader_node(state)
+
+        assert first["classified_events"] == second["classified_events"]
+        mock_llm.invoke.assert_called_once()
 
 
 class TestRemediationNode:
