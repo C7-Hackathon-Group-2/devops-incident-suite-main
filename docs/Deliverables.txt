@@ -1,0 +1,6 @@
+Deliverables:
+-------------
+App URL: https://devops-incident-suite-main-group2.streamlit.app/
+github: https://github.com/C7-Hackathon-Group-2/devops-incident-suite-main
+Jira: https://vinnyailearner.atlassian.net/jira/software/projects/KAN/list
+Slack: https://app.slack.com/client/T0B9Y6UTQ8P/
