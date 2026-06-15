@@ -35,3 +35,16 @@ def empty_state() -> dict[str, Any]:
         "status": "starting",
         "errors": [],
     }
+
+
+@pytest.fixture(autouse=True)
+def clear_agent_caches() -> None:
+    """Keep agent-level caches from leaking between tests."""
+    try:
+        import agents
+
+        agents._log_analysis_cache.clear()
+        agents._remediation_cache.clear()
+        agents._cookbook_cache.clear()
+    except Exception:
+        pass

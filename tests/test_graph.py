@@ -68,15 +68,11 @@ class TestBuildIncidentGraph:
         empty_state: dict[str, Any],
     ) -> None:
         """Critical events should flow through all five nodes end-to-end."""
-        # Arrange — LLM responses for log_reader (3) + remediation (1)
-        schema_resp: MagicMock = MagicMock()
-        schema_resp.content = json.dumps({"format_name": "test", "fields": []})
-
-        events_resp: MagicMock = MagicMock()
-        events_resp.content = json.dumps({"events": [{"msg": "link down"}]})
-
-        classify_resp: MagicMock = MagicMock()
-        classify_resp.content = json.dumps({
+        # Arrange — LLM responses for log_reader (1) + remediation (1)
+        analysis_resp: MagicMock = MagicMock()
+        analysis_resp.content = json.dumps({
+            "schema": {"format_name": "test", "fields": []},
+            "events": [{"msg": "link down"}],
             "classified": [{
                 "msg": "link down", "severity": "critical",
                 "category": "interface", "summary": "Link failure",
@@ -94,9 +90,7 @@ class TestBuildIncidentGraph:
             }],
         })
 
-        mock_llm_json.invoke.side_effect = [
-            schema_resp, events_resp, classify_resp, remed_resp,
-        ]
+        mock_llm_json.invoke.side_effect = [analysis_resp, remed_resp]
 
         cookbook_resp: MagicMock = MagicMock()
         cookbook_resp.content = "# Runbook\n## Summary\nLink fixed."
@@ -131,21 +125,17 @@ class TestBuildIncidentGraph:
     ) -> None:
         """Non-critical events should skip the notification and JIRA nodes."""
         # Arrange
-        schema_resp: MagicMock = MagicMock()
-        schema_resp.content = json.dumps({"format_name": "test", "fields": []})
-
-        events_resp: MagicMock = MagicMock()
-        events_resp.content = json.dumps({"events": [{"msg": "all good"}]})
-
-        classify_resp: MagicMock = MagicMock()
-        classify_resp.content = json.dumps({
+        analysis_resp: MagicMock = MagicMock()
+        analysis_resp.content = json.dumps({
+            "schema": {"format_name": "test", "fields": []},
+            "events": [{"msg": "all good"}],
             "classified": [{
                 "msg": "all good", "severity": "info",
                 "category": "application", "summary": "Healthy",
             }],
         })
 
-        mock_llm_json.invoke.side_effect = [schema_resp, events_resp, classify_resp]
+        mock_llm_json.invoke.side_effect = [analysis_resp]
 
         cookbook_resp: MagicMock = MagicMock()
         cookbook_resp.content = "# Runbook\nNo issues."

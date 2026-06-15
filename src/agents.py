@@ -17,8 +17,11 @@ Pipeline stages:
 from __future__ import annotations
 
 import json
+import copy
+import hashlib
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -43,8 +46,14 @@ else:
 _llm_cache: dict[str, ChatOpenAI] = {}
 _llm_cache_key: str | None = None
 
-SCHEMA_SAMPLE_LINES: int = 15
-LOG_CHUNK_SIZE: int = 100
+LOG_ANALYSIS_CACHE_VERSION: str = "combined-v1"
+REMEDIATION_CACHE_VERSION: str = "remediation-v1"
+COOKBOOK_CACHE_VERSION: str = "cookbook-v1"
+MAX_PARALLEL_LOG_ANALYSES: int = 4
+
+_log_analysis_cache: dict[str, dict[str, Any]] = {}
+_remediation_cache: dict[str, list[dict[str, Any]]] = {}
+_cookbook_cache: dict[str, str] = {}
 
 
 def _get_llm(json_mode: bool = False) -> ChatOpenAI:
@@ -138,6 +147,132 @@ def _safe_json_parse(text: str) -> dict[str, Any] | list[Any]:
     return json.loads(text)
 
 
+def _log_cache_key(filename: str, content: str) -> str:
+    """Return a stable cache key for a filename/content pair."""
+    digest: str = hashlib.sha256(content.encode("utf-8", errors="replace")).hexdigest()
+    return f"{LOG_ANALYSIS_CACHE_VERSION}:{filename}:{digest}"
+
+
+def _json_cache_key(version: str, payload: Any) -> str:
+    """Return a stable cache key for JSON-serializable data."""
+    raw: str = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    digest: str = hashlib.sha256(raw.encode("utf-8", errors="replace")).hexdigest()
+    return f"{version}:{digest}"
+
+
+def _compact_actionable_event(event: dict[str, Any]) -> dict[str, Any]:
+    """Keep only remediation-relevant event fields before sending to the LLM."""
+    preferred_keys: tuple[str, ...] = (
+        "severity",
+        "category",
+        "summary",
+        "source_file",
+        "timestamp",
+        "time",
+        "hostname",
+        "host",
+        "device",
+        "service",
+        "interface",
+        "src",
+        "dst",
+        "user",
+        "message",
+        "msg",
+    )
+    compact: dict[str, Any] = {
+        key: event[key]
+        for key in preferred_keys
+        if key in event and event[key] not in (None, "", [], {})
+    }
+    if "summary" not in compact:
+        compact["summary"] = str(event)[:240]
+    return compact
+
+
+def _analyze_log_file(filename: str, content: str) -> dict[str, Any]:
+    """Analyze one log file with a single structured LLM call."""
+    lines: list[str] = content.strip().splitlines()
+    if not lines:
+        return {
+            "filename": filename,
+            "schema": None,
+            "parsed_events": [],
+            "classified_events": [],
+            "errors": [],
+        }
+
+    cache_key: str = _log_cache_key(filename, content)
+    if cache_key in _log_analysis_cache:
+        logger.info("Using cached log analysis for %s", filename)
+        return copy.deepcopy(_log_analysis_cache[cache_key])
+
+    logger.info("Analyzing %s (%d lines)", filename, len(lines))
+    resp = LLM_JSON.invoke([
+        SystemMessage(content=(
+            "You are a DevOps log analysis engine. Analyze the supplied log file in one pass.\n"
+            "Infer the log format/schema, parse each event, and classify each event.\n"
+            "For multi-line entries such as stack traces, combine continuation lines into the "
+            "parent event's message field.\n\n"
+            "Severity must be one of: critical, warning, info.\n"
+            "Category must be one of: interface, auth, resource, policy, routing, security, "
+            "hardware, application, database, network.\n"
+            "Keep event objects compact: include only fields present in the log plus "
+            "source_file, severity, category, and a one-line summary.\n\n"
+            'Return JSON exactly as: {"schema": {"format_name": "...", "description": "...", '
+            '"fields": [{"position": 0, "name": "...", "type": "...", "description": "...", '
+            '"example": "..."}]}, "events": [{...}], "classified": [{...}]}'
+        )),
+        HumanMessage(content=f"Filename: {filename}\n\nLog lines:\n{content.strip()}"),
+    ])
+
+    try:
+        parsed: dict[str, Any] | list[Any] = _safe_json_parse(resp.content)
+    except json.JSONDecodeError:
+        logger.warning("Log analysis failed for %s", filename)
+        return {
+            "filename": filename,
+            "schema": None,
+            "parsed_events": [],
+            "classified_events": [],
+            "errors": [f"Log analysis failed for {filename}"],
+        }
+
+    if not isinstance(parsed, dict):
+        return {
+            "filename": filename,
+            "schema": None,
+            "parsed_events": [],
+            "classified_events": [],
+            "errors": [f"Log analysis returned unexpected JSON for {filename}"],
+        }
+
+    file_events: list[dict[str, Any]] = [
+        dict(evt) for evt in parsed.get("events", []) if isinstance(evt, dict)
+    ]
+    classified_events: list[dict[str, Any]] = [
+        dict(evt) for evt in parsed.get("classified", file_events) if isinstance(evt, dict)
+    ]
+
+    for evt in file_events:
+        evt.setdefault("source_file", filename)
+    for evt in classified_events:
+        evt.setdefault("source_file", filename)
+        evt.setdefault("severity", "info")
+        evt.setdefault("category", "unknown")
+        evt.setdefault("summary", evt.get("message", evt.get("msg", "Log event")))
+
+    result: dict[str, Any] = {
+        "filename": filename,
+        "schema": parsed.get("schema"),
+        "parsed_events": file_events,
+        "classified_events": classified_events,
+        "errors": [],
+    }
+    _log_analysis_cache[cache_key] = copy.deepcopy(result)
+    return result
+
+
 def log_reader_node(state: IncidentState) -> dict[str, Any]:
     """AI-driven log parser: infer schema, parse events, classify severity.
 
@@ -162,93 +297,27 @@ def log_reader_node(state: IncidentState) -> dict[str, Any]:
     all_classified: list[dict[str, Any]] = []
     errors: list[str] = list(state.get("errors", []))
 
-    for filename, content in state["raw_logs"].items():
-        lines: list[str] = content.strip().splitlines()
-        if not lines:
-            continue
+    log_items: list[tuple[str, str]] = list(state["raw_logs"].items())
+    if len(log_items) <= 1:
+        file_results = [_analyze_log_file(filename, content) for filename, content in log_items]
+    else:
+        max_workers: int = min(MAX_PARALLEL_LOG_ANALYSES, len(log_items))
+        file_results = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(_analyze_log_file, filename, content)
+                for filename, content in log_items
+            ]
+            for future in as_completed(futures):
+                file_results.append(future.result())
 
-        sample: str = "\n".join(lines[:SCHEMA_SAMPLE_LINES])
-        logger.info("Inferring schema for %s (%d lines)", filename, len(lines))
-
-        schema_resp = LLM_JSON.invoke([
-            SystemMessage(content=(
-                "You are a network/infrastructure log format analyst. "
-                "Given sample log lines, identify the log format type and every field. "
-                'Return JSON: {"format_name": "...", "description": "...", '
-                '"fields": [{"position": 0, "name": "...", "type": "...", '
-                '"description": "...", "example": "..."}]}'
-            )),
-            HumanMessage(content=f"Filename: {filename}\n\nSample lines:\n{sample}"),
-        ])
-
-        try:
-            schema: dict[str, Any] | list[Any] = _safe_json_parse(schema_resp.content)
-        except json.JSONDecodeError:
-            logger.warning("Schema inference failed for %s", filename)
-            errors.append(f"Schema inference failed for {filename}")
-            continue
-
-        inferred_schemas[filename] = schema
-
-        file_events: list[dict[str, Any]] = []
-        for i in range(0, len(lines), LOG_CHUNK_SIZE):
-            chunk: str = "\n".join(lines[i : i + LOG_CHUNK_SIZE])
-            parse_resp = LLM_JSON.invoke([
-                SystemMessage(content=(
-                    "You are a log parser. Using the schema below, parse each log line "
-                    "into a structured JSON event. For multi-line entries (stack traces, "
-                    "continuation lines), combine them into the parent event's message field. "
-                    'Return JSON: {"events": [{...}]}\n\n'
-                    f"Schema: {json.dumps(schema)}"
-                )),
-                HumanMessage(content=f"Log lines:\n{chunk}"),
-            ])
-            try:
-                parsed: dict[str, Any] | list[Any] = _safe_json_parse(parse_resp.content)
-                events: list[dict[str, Any]] = (
-                    parsed.get("events", parsed)
-                    if isinstance(parsed, dict)
-                    else parsed
-                )
-                for evt in events:
-                    evt["source_file"] = filename
-                file_events.extend(events)
-            except json.JSONDecodeError:
-                logger.warning("Parse failed for chunk %d-%d in %s", i, i + LOG_CHUNK_SIZE, filename)
-                errors.append(f"Parse failed for chunk {i}-{i + LOG_CHUNK_SIZE} in {filename}")
-
-        all_parsed.extend(file_events)
-
-        classify_resp = LLM_JSON.invoke([
-            SystemMessage(content=(
-                "You are a DevOps incident classifier. For each event, assign:\n"
-                "- severity: critical, warning, or info\n"
-                "- category: one of [interface, auth, resource, policy, routing, "
-                "security, hardware, application, database, network]\n"
-                "- summary: one-line human description of what happened\n"
-                'Return JSON: {"classified": [{original event fields + severity, '
-                "category, summary}]}"
-            )),
-            HumanMessage(content=f"Events to classify:\n{json.dumps(file_events)}"),
-        ])
-        try:
-            classified: dict[str, Any] | list[Any] = _safe_json_parse(classify_resp.content)
-            items: list[dict[str, Any]] = (
-                classified.get("classified", classified)
-                if isinstance(classified, dict)
-                else classified
-            )
-            all_classified.extend(items)
-        except json.JSONDecodeError:
-            logger.warning("Classification failed for %s", filename)
-            errors.append(f"Classification failed for {filename}")
-            for evt in file_events:
-                evt.update({
-                    "severity": "info",
-                    "category": "unknown",
-                    "summary": "Classification failed",
-                })
-                all_classified.append(evt)
+    for file_result in sorted(file_results, key=lambda item: item["filename"]):
+        filename = file_result["filename"]
+        if file_result.get("schema") is not None:
+            inferred_schemas[filename] = file_result["schema"]
+        all_parsed.extend(file_result.get("parsed_events", []))
+        all_classified.extend(file_result.get("classified_events", []))
+        errors.extend(file_result.get("errors", []))
 
     logger.info(
         "Log reader complete: %d schemas, %d events, %d classified",
@@ -281,12 +350,22 @@ def remediation_node(state: IncidentState) -> dict[str, Any]:
     """
     events: list[dict[str, Any]] = state.get("classified_events", [])
     actionable: list[dict[str, Any]] = [
-        e for e in events if e.get("severity") in ("critical", "warning")
+        _compact_actionable_event(e)
+        for e in events
+        if e.get("severity") in ("critical", "warning")
     ]
 
     if not actionable:
         logger.info("No actionable events — skipping remediation")
         return {"remediations": [], "status": "remediated"}
+
+    cache_key: str = _json_cache_key(REMEDIATION_CACHE_VERSION, actionable)
+    if cache_key in _remediation_cache:
+        logger.info("Using cached remediations for %d actionable events", len(actionable))
+        return {
+            "remediations": copy.deepcopy(_remediation_cache[cache_key]),
+            "status": "remediated",
+        }
 
     logger.info("Generating remediations for %d actionable events", len(actionable))
     resp = LLM_JSON.invoke([
@@ -322,6 +401,7 @@ def remediation_node(state: IncidentState) -> dict[str, Any]:
             "root_cause": "LLM output was not valid JSON",
         }]
 
+    _remediation_cache[cache_key] = copy.deepcopy(remediations)
     return {"remediations": remediations, "status": "remediated"}
 
 
@@ -348,6 +428,11 @@ def cookbook_node(state: IncidentState) -> dict[str, Any]:
             "status": "complete",
         }
 
+    cache_key: str = _json_cache_key(COOKBOOK_CACHE_VERSION, remediations)
+    if cache_key in _cookbook_cache:
+        logger.info("Using cached runbook from %d remediations", len(remediations))
+        return {"cookbook": _cookbook_cache[cache_key], "status": "complete"}
+
     logger.info("Generating runbook from %d remediations", len(remediations))
     resp = LLM.invoke([
         SystemMessage(content=(
@@ -368,6 +453,7 @@ def cookbook_node(state: IncidentState) -> dict[str, Any]:
         HumanMessage(content=f"Remediation data:\n{json.dumps(remediations)}"),
     ])
 
+    _cookbook_cache[cache_key] = resp.content
     return {"cookbook": resp.content, "status": "complete"}
 
 
